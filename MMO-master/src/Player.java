@@ -1,11 +1,10 @@
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.Shape;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 
 public class Player {
 
@@ -20,7 +19,7 @@ public class Player {
 	public moveDirection moveDir = moveDirection.NONE;
 	
 	public int x = 100, y = 100, motionX, motionY, width = 48, height = 64,
-			offSet = 8;
+			offSet = 8, aISmartTick = 0, aIDiff = 3;
 
 	public float health = 100;
 
@@ -28,6 +27,10 @@ public class Player {
 
 	public boolean blocking = false;
 
+	public boolean aIGo = false;
+	
+	public boolean aI = false, aISmart = false;
+	
 	public boolean detonate = false;
 
 	public int strafeTick = 0;
@@ -35,7 +38,9 @@ public class Player {
 	public int speedTicks = 0;
 
 	public SpriteSheetReader reader;
-
+	
+	private static Random random;
+	
 	public boolean strafe = false;
 
 	public int faction = 1; // 1 blackguard 2 moonshit
@@ -48,6 +53,7 @@ public class Player {
 	public long tack1Start = -cool1, tack2Start = -cool2, tack3Start = -cool3;
 
 	public int speed = 2;
+	public int aISpeed = 2; 
 
 	public Animation bMageS, bMageD, bMageL, bMageU, bMageR, rMageS, rMageD,
 			rMageL, rMageU, rMageR, bArcherS, bArcherD, bArcherL, bArcherU,
@@ -69,17 +75,21 @@ public class Player {
 	public Rectangle frontB, backB, leftB, rightB, playerB;
 	public Rectangle playerShoot;
 
+	public boolean xGood = false, yGood = false;
+	
 	public Rectangle screenTop, screenBottom, screenLeft, screenRight;
 
 	public PLAYERTYPE type;
 
-	public Player(PLAYERTYPE p, int playerNumber) {
+	public Player(PLAYERTYPE p, int playerNumber, boolean aI) {
+		random = new Random();
 		reader = new SpriteSheetReader();
 		this.playerNum = playerNumber;
 		if (playerNum == 2) {
 			x = 700;
 			y = 100;
 		}
+		this.aI = aI;
 		front = new Rectangle(x + offSet, y, width, 0);
 		back = new Rectangle(x + offSet, y + height - 1, width, 1);
 		left = new Rectangle(x + offSet, y, 1, height);
@@ -316,16 +326,9 @@ public class Player {
 	}
 
 	public void render(Graphics2D g) {
-		// g.drawImage(imageLoader.imageLoader("./MAGE.png"), 0, 0, null);
-		//g.setColor(Color.black);
-		//g.drawLine(0, 20, 1280, 20);
-		// g.drawRect(x + offSet, y, width, height);
-		// g.rotate(Math.toRadians(pointing), x + 16, y + 16);
-		//g.draw(playerB);
-		//g.setColor(Color.red);
-		//g.draw(front);
+		
 		if (front.intersects(screenTop)) {
-			// System.out.println("yay");
+			//  ("yay");
 		}
 		if (this.health <= 0) {
 			if (this.playerNum == 1) {
@@ -456,7 +459,7 @@ public class Player {
 		g.setFont(new Font("Minecraft", Font.PLAIN, 10));
 		g.drawString("" + health, x, y);
 
-	//	g.draw(playerShoot);
+	
 
 	}
 
@@ -522,8 +525,12 @@ public class Player {
 			break;
 		}
 
-		// System.out.println("pointing = " + pointing);
+		//  ("pointing = " + pointing);
 
+		if (Game.aIStatus && playerNum == 1 && Game.State == Game.STATE.GAME){
+			aI();
+		}
+		
 		playerShoot.setLocation(x - 16, y - 16);
 		if (motionX != 0 || motionY != 0) {
 			if (faction == 2) {
@@ -642,11 +649,7 @@ public class Player {
 			}
 		}
 
-		// if(player.getX() + width + speed > 1280 || player.getX() - speed <
-		// 0){
-		// motionX = 0;
-		// }
-		// System.out.println(x + ", " + y);
+		
 		if (playerB.getX() + speed + 20 + playerB.getWidth() > 1280) {
 			motionX = 0;
 			x--;
@@ -664,40 +667,7 @@ public class Player {
 			motionY = 0;
 			y++;
 		}
-		/*
-		if(playerB.intersects(Game.game.player2.playerB) && (motionX != 0 || motionY!= 0) && this.playerNum == 1){
-			switch(pointing){
-			case 1:
-				y += 10;
-				break;
-			case 2:
-				x -= 10;
-				break;
-			case 3:
-				y-= 10;
-				break;
-			case 4:
-				x+= 10;
-				break;
-			}
-		}
-		if(playerB.intersects(Game.game.player1.playerB) && (motionX != 0 || motionY!= 0) && this.playerNum == 2){
-			switch(pointing){
-			case 1:
-				y += 10;
-				break;
-			case 2:
-				x -= 10;
-				break;
-			case 3:
-				y-= 10;
-				break;
-			case 4:
-				x+= 10;
-				break;
-			}
-		}
-		*/
+		
 		
 		
 		if(motionX == 0 && motionY == 0){
@@ -732,7 +702,7 @@ public class Player {
 			case DOWN:
 				if(playerB.intersects(Game.game.player2.frontB)){
 					y -= 10;
-					System.out.println("down");
+					 
 				} 
 				break;
 			case LEFT:
@@ -796,7 +766,7 @@ public class Player {
 			case DOWN:
 				if(playerB.intersects(Game.game.player1.frontB)){
 					y -= 10;
-					System.out.println("down");
+					 
 				} 
 				break;
 			case LEFT:
@@ -831,7 +801,7 @@ public class Player {
 					x -= 10;
 					
 				} else if(playerB.intersects(Game.game.player1.frontB)){
-					System.out.println("down");
+					 
 					y -= 10;
 				}
 				break;
@@ -840,7 +810,7 @@ public class Player {
 					x += 10;
 					
 				} else if(playerB.intersects(Game.game.player1.frontB)){
-					System.out.println("down");
+					 
 					y -= 10;
 				}
 				break;
@@ -848,27 +818,7 @@ public class Player {
 		}
 		
 		
-		/*if (playerNum == 1) {
-			if (this.player.intersects(Game.game.player2.player)) {
-				motionX = motionX * -1;
-				motionY = motionY * -1;
-				x += motionX;
-				x += motionX;
-				y += motionY;
-				y += motionY;
-			}
-		}
-
-		if (playerNum == 2) {
-			if (this.player.intersects(Game.game.player1.player)) {
-				motionX = motionX * -1;
-				motionY = motionY * -1;
-				x += motionX;
-				x += motionX;
-				y += motionY;
-				y += motionY;
-			}
-		}*/
+		
 		if (blocking == false) {
 			x += motionX;
 			y += motionY;
@@ -952,7 +902,7 @@ public class Player {
 						ability2();
 					}
 				}
-				if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+				if (e.getKeyCode() == KeyEvent.VK_F) {
 					detonate = true;
 				}
 
@@ -977,7 +927,7 @@ public class Player {
 				if (e.getKeyCode() == KeyEvent.VK_R) {
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+				if (e.getKeyCode() == KeyEvent.VK_F) {
 					detonate = false;
 				}
 				if (e.getKeyCode() == KeyEvent.VK_E) {
@@ -986,9 +936,9 @@ public class Player {
 					}
 				}
 			}
-		} else {
+		} else  {
 			if (pressed) {
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD8) {
+				if (e.getKeyCode() == KeyEvent.VK_UP) {
 					motionY = -speed;
 					if (strafe == false) {
 						pointing = 1;
@@ -998,7 +948,7 @@ public class Player {
 						y++;
 					}
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD5) {
+				if (e.getKeyCode() == KeyEvent.VK_DOWN) {
 					motionY = speed;
 					if (strafe == false) {
 						pointing = 3;
@@ -1009,7 +959,7 @@ public class Player {
 					}
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD4) {
+				if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 					motionX = -speed;
 					if (strafe == false) {
 						pointing = 4;
@@ -1020,7 +970,7 @@ public class Player {
 					}
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD6) {
+				if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
 					motionX = speed;
 					if (strafe == false) {
 						pointing = 2;
@@ -1037,7 +987,7 @@ public class Player {
 					}
 				}
 
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD7) {
+				if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
 					if (this.type == PLAYERTYPE.HEAVY) {
 						blocking = true;
 					}
@@ -1046,10 +996,10 @@ public class Player {
 						ability();
 					}
 				}
-				if (e.getKeyCode() == KeyEvent.VK_ADD) {
+				if (e.getKeyCode() == KeyEvent.VK_BACK_SLASH) {
 					detonate = true;
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD9) {
+				if (e.getKeyCode() == KeyEvent.VK_PAGE_DOWN) {
 					if (System.currentTimeMillis() - tack3Start > cool3) {
 						tack3Start = System.currentTimeMillis();
 						ability2();
@@ -1057,26 +1007,26 @@ public class Player {
 				}
 			}
 			if (!pressed) {
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD8) {
+				if (e.getKeyCode() == KeyEvent.VK_UP) {
 					motionY = 0;
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD5) {
+				if (e.getKeyCode() == KeyEvent.VK_DOWN) {
 					motionY = 0;
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD4) {
+				if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 					motionX = 0;
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD6) {
+				if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
 					motionX = 0;
 
 				}
-				if (e.getKeyCode() == KeyEvent.VK_ADD) {
+				if (e.getKeyCode() == KeyEvent.VK_BACK_SLASH) {
 					detonate = false;
 				}
-				if (e.getKeyCode() == KeyEvent.VK_NUMPAD7) {
+				if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
 					if (this.type == PLAYERTYPE.HEAVY) {
 						blocking = false;
 					}
@@ -1154,6 +1104,7 @@ public class Player {
 		motionY = 0;
 		health = 100;
 		maxHealth = 100;
+		aISpeed = 2;
 		if (this.type == PLAYERTYPE.HEAVY) {
 			this.health = 300;
 			maxHealth = 300;
@@ -1164,6 +1115,12 @@ public class Player {
 		}
 		blocking = false;
 		detonate = false;
+		if(this.playerNum ==1){
+			this.x= 100;
+			this.y = 100;
+		}else{
+			this.x = 500;
+		}
 	}
 
 	public void ability() {
@@ -1185,7 +1142,7 @@ public class Player {
 							ID.Arrow, this);
 					Game.game.handler.addObject(melee1);
 					start = System.currentTimeMillis();
-					System.out.println("test" + n);
+					 
 					n++;
 				}
 			}
@@ -1193,7 +1150,7 @@ public class Player {
 	}
 
 	public void ability2() {
-		System.out.println("ability 2");
+		 
 		int[] point = shotPoint();
 		if (this.type == PLAYERTYPE.HEAVY) {
 			Projectile melee1 = new Projectile(point[0], point[1],
@@ -1211,4 +1168,164 @@ public class Player {
 
 	}
 
-}
+	public void aI(){
+		if(aIDiff <= 1){
+			aISpeed = 3;
+			aISmart = true;
+		}else{
+			aIGo = false;
+			
+		}
+		if(aISmartTick > 20 && aIGo == false && aIDiff >= 1){
+			if (random.nextInt(aIDiff) == 0){
+				aISmart = true;
+			}else{
+				aISmart = false;
+				switch(random.nextInt(3)){
+				case 0:
+					motionX = -aISpeed;
+					pointing = 4;
+					break;
+				case 1:
+					motionX = 0;
+				case 2:
+					motionX = aISpeed;
+					pointing = 1;
+				}
+				switch (random.nextInt(3)){
+				case 0:
+					motionY = -aISpeed;
+					break;
+				case 1:
+					motionY = 0;
+					break;
+				case 2:
+					motionY = aISpeed;
+					break;
+				}
+			}
+			aISmartTick = 0;
+				
+			
+		}else{
+			aISmartTick++;
+			
+		}
+		if(aISmart){
+		if(Game.powerUpB){
+			if (Game.game.powerUpX > x){
+				motionX = aISpeed;
+				pointing = 3;
+			}else if (Game.game.powerUpX < x){
+				motionX = - aISpeed;
+				pointing = 1;
+			}else {
+				motionX = 0;
+				
+			}
+			if (Game.game.powerUpY > y){
+				motionY = aISpeed;
+			}else if (Game.game.powerUpY < y){
+				motionY = -aISpeed;
+			}else{
+				motionY = 0;
+			}
+		}else {
+			switch (aIMove(150, Game.game.player2.x, x, 50, true)){
+			case 0:
+				motionX = -aISpeed;
+				pointing = 4;
+				break;
+			case 1:
+				xGood = true;
+				break;
+			case 2:
+				motionX = aISpeed;pointing = 1;
+				break;
+			}
+
+			switch (aIMove(100, Game.game.player2.y, y, 50, false)){
+			case 0:
+				motionY = -aISpeed;
+				
+				break;
+			case 1:
+				yGood = true;
+				break;
+			case 2:
+				motionY = aISpeed;
+				break;
+			}
+			
+		}
+			if(true){
+				//System.out.println("shoot");
+				yGood = false;
+				xGood =false;
+				if(Game.game.player2.x > x){
+					pointing = 2;
+				}else{
+					pointing = 4;
+				}
+				if (System.currentTimeMillis() - tack2Start > cool2) {
+					tack2Start = System.currentTimeMillis();
+					System.out.println("abitliy");
+					ability();
+				}
+				if (System.currentTimeMillis() - tack1Start > cool1) {
+					tack1Start = System.currentTimeMillis();
+					System.out.println("Attack");
+					attack();
+				}
+				
+				
+			}
+		
+		
+	
+		
+	
+	
+	}
+	}
+	
+	public int aIMove(int buffer, int player2, int aI, int plusMinus, boolean xOrY){
+		// true = X false = Y
+		if(!xOrY){
+		if (player2 > aI + buffer + plusMinus || player2> aI + buffer - plusMinus){
+			return 2;
+		}
+		if (player2 < aI - buffer - plusMinus || player2 < aI - buffer + plusMinus){
+			return 0;
+		}else{
+			return 1;
+		}
+		}else{
+			if ((Game.game.player2.x > this.x - buffer - plusMinus || Game.game.player2.x > this.x - buffer + plusMinus) && (Game.game.player2.x < this.x + buffer - plusMinus ||  Game.game.player2.x < this.x + buffer + plusMinus)){
+			//System.out.println("back up");
+				if (player2 > aI  + plusMinus || player2> aI  - plusMinus){
+				return 0;
+			
+					}
+			
+				if (player2 < aI -plusMinus || player2 < aI  + plusMinus){
+				return 2;
+			
+				}else{
+				return 1;
+			}
+			}else{
+			//	System.out.println("not back up");
+				if (player2 > aI + buffer + plusMinus || player2> aI + buffer - plusMinus){
+					return 2;
+				}
+				if (player2 < aI - buffer - plusMinus || player2 < aI - buffer + plusMinus){
+					return 0;
+				}else{
+					return 1;
+				}
+			}
+		}
+	}
+	
+}	

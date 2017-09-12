@@ -46,6 +46,7 @@ public class powerUp extends GameObject {
 				Game.game.player1.speed = (int) (Game.game.player1.speed * 1.5);
 				Game.game.handler.removeObject(this);
 			}
+			Game.powerUpB = false;
 		}
 		if (box.intersects(Game.game.player2.playerB)) {
 			if (id == ID.PowerUp) {
@@ -55,6 +56,7 @@ public class powerUp extends GameObject {
 				Game.game.player2.speed = (int) (Game.game.player2.speed * 1.5);
 				Game.game.handler.removeObject(this);
 			}
+			Game.powerUpB = false;
 		}
 	}
 

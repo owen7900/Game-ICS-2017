@@ -7,7 +7,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,7 +15,6 @@ import java.util.Random;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.sound.sampled.FloatControl;
 import javax.swing.JFrame;
 
 public class Game implements Runnable, KeyListener, MouseListener,
@@ -34,8 +32,10 @@ public class Game implements Runnable, KeyListener, MouseListener,
 	public static Character character;
 	public static CharacterFaction faction;
 	public static CharacterClass race;
+	public static AIMenu aIMenu;
 	public static CharacterFaction createFaction;
 	public static CharacterFinal characterFinal;
+	public static DifficultyMenu difficultyMenu;
 
 	public static int powerUpTick = 2700;// was 2700
 
@@ -47,7 +47,7 @@ public class Game implements Runnable, KeyListener, MouseListener,
 
 	public static Game game;
 	public Rectangle mouse;
-	public Player player;
+	//public Player player;
 	static PrintWriter writer;
 	public Handler handler;
 	public int mouseX, mouseY;
@@ -69,13 +69,17 @@ public class Game implements Runnable, KeyListener, MouseListener,
 
 	public File moonWalk = new File("./moonWalk.wav");
 
+	public static boolean aIStatus = false;
+	
+	public static int powerUpX, powerUpY;
+	
 	public int musicTime = 2400;
 
 	private BufferedImage images = new BufferedImage(WIDTH, HEIGHT,
 			BufferedImage.TYPE_INT_RGB);
 
 	public static enum STATE {
-		MENU, GAME, PAUSE, CONTROLS, CHARACTER, CHARACTER_FACTION, CHARACTERCREATE_CLASS, CHARACTERCREATE_NAME, CHARACTERSELECT, WIN
+		DIFFICULTY_SELECT, NUMBER_OF_PLAYERS, MENU, GAME, PAUSE, CONTROLS, CHARACTER, CHARACTER_FACTION, CHARACTERCREATE_CLASS, CHARACTERCREATE_NAME, CHARACTERSELECT, WIN
 	};
 
 	public static STATE State = STATE.MENU;
@@ -83,12 +87,13 @@ public class Game implements Runnable, KeyListener, MouseListener,
 	// /////////////////////////////////////////////////////////////////////////
 
 	public void init() {
+		difficultyMenu = new DifficultyMenu();
 		menu = new Menu();
 		controls = new Controls();
 		mouse = new Rectangle();
-		player1 = new Player(Player.PLAYERTYPE.MAGE, 1);
-		player2 = new Player(Player.PLAYERTYPE.ARCHER, 2);
-		player1.setPlayerType(Player.PLAYERTYPE.HEAVY, 1);
+		player1 = new Player(Player.PLAYERTYPE.MAGE, 1, false);
+		player2 = new Player(Player.PLAYERTYPE.ARCHER, 2, false);
+		player1.setPlayerType(Player.PLAYERTYPE.ARCHER, 1);
 		player2.setPlayerType(Player.PLAYERTYPE.ARCHER, 2);
 		rMage = player1.rMageSI[1];
 		rArcher = player1.rArcherSI[1];
@@ -99,6 +104,7 @@ public class Game implements Runnable, KeyListener, MouseListener,
 		handler = new Handler();
 		random = new Random();
 		character = new Character();
+		aIMenu = new AIMenu();
 		createFaction = new CharacterFaction();
 		background = imageLoader
 				.imageLoader("./MMO-master/src/grahpics/arenaSet.jpg");
@@ -175,13 +181,16 @@ public class Game implements Runnable, KeyListener, MouseListener,
 		powerTicks++;
 		musicTime++;
 		if (powerTicks > powerUpTick && powerUpB == false) {
+			powerUpX = random.nextInt(1200);
+			powerUpY =random.nextInt(700);
 			if (random.nextInt(2) == 0) {
-				powerUp powerUp = new powerUp(random.nextInt(1200),
-						random.nextInt(700), ID.PowerUp);
+				
+				powerUp powerUp = new powerUp( powerUpX,
+						powerUpY, ID.PowerUp);
 				this.handler.addObject(powerUp);
 			} else {
-				powerUp powerUp = new powerUp(random.nextInt(1280),
-						random.nextInt(720), ID.Speed);
+				powerUp powerUp = new powerUp(powerUpX,
+						powerUpY, ID.Speed);
 				this.handler.addObject(powerUp);
 			}
 			powerUpB = true;
@@ -189,6 +198,8 @@ public class Game implements Runnable, KeyListener, MouseListener,
 			System.out.println("should be spawning");
 		}
 		if (Game.State == STATE.MENU) {
+			player1.reset();
+			player2.reset();
 			if (mouse.intersects(menu.playButton)) {
 				System.out.println("yay");
 				playButton = true;
@@ -244,6 +255,7 @@ public class Game implements Runnable, KeyListener, MouseListener,
 			controls.render(g);
 		}
 		if (Game.State == STATE.GAME) {
+			
 			g.drawImage(background, 0, 0, 1280, 720, null);
 			game.player1.render(g);
 			game.player2.render(g);
@@ -313,6 +325,13 @@ public class Game implements Runnable, KeyListener, MouseListener,
 			g.setColor(Color.BLACK);
 			g.drawString("Player" + Game.winner + " WINS", 350, 300);
 		}
+		if (Game.State == STATE.NUMBER_OF_PLAYERS){
+			aIMenu.render(g);
+			System.out.println("here");
+		}
+		if(Game.State == STATE.DIFFICULTY_SELECT){
+			difficultyMenu.render(g);
+		}
 	}
 
 	public static void main(String[] args) {
@@ -352,7 +371,7 @@ public class Game implements Runnable, KeyListener, MouseListener,
 		frame.addKeyListener(game);
 		frame.addMouseListener(game);
 		frame.addMouseMotionListener(game);
-
+		
 		// Makes the JFrame visible
 		frame.setVisible(true);
 		// Starts the instance
@@ -369,6 +388,53 @@ public class Game implements Runnable, KeyListener, MouseListener,
 		if (Game.State == STATE.GAME) {
 			game.player1.control(e, true);
 			game.player2.control(e, true);
+		}
+		if (Game.State == STATE.DIFFICULTY_SELECT){
+			
+			switch (e.getKeyCode()){
+			case 49:
+				player1.aIDiff = 9;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 50:
+				player1.aIDiff = 8;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 51:
+				player1.aIDiff = 7;Game.State = STATE.CHARACTER_FACTION;
+				
+				break;
+			case 52:
+				player1.aIDiff = 6;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 53:
+				player1.aIDiff = 5;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 54:
+				player1.aIDiff = 4;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 55:
+				player1.aIDiff = 3;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 56:
+				player1.aIDiff = 2;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 57:
+				player1.aIDiff = 1;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			case 48:
+				player1.aIDiff = 0;
+				Game.State = STATE.CHARACTER_FACTION;
+				break;
+			
+			}
+			System.out.println(e.getKeyCode());
 		}
 	}
 
@@ -396,8 +462,9 @@ public class Game implements Runnable, KeyListener, MouseListener,
 				player1.pointing = 0;
 				player2.pointing = 0;
 				playerCount = 0;
+				player1.setPlayerType(Player.PLAYERTYPE.ARCHER, 2);
 
-				Game.State = STATE.CHARACTER_FACTION;
+				Game.State = STATE.NUMBER_OF_PLAYERS;
 			}
 			if (menu.quitButton.contains(mouse)) {
 				System.exit(1);
@@ -520,6 +587,19 @@ public class Game implements Runnable, KeyListener, MouseListener,
 			System.out.println(Game.State);
 			break;
 
+			
+		case NUMBER_OF_PLAYERS:
+			System.out.println(Game.State);
+			if(Game.aIMenu.onePLayer.contains(mouse)){
+				aIStatus = true;
+				playerCount = 1;
+				Game.State = STATE.DIFFICULTY_SELECT;
+			} else {
+				Game.State = STATE.CHARACTER_FACTION;
+			}
+			break;
+		case DIFFICULTY_SELECT :
+			break;
 		}
 	}
 

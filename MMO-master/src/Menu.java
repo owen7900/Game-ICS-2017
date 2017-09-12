@@ -30,7 +30,7 @@ public class Menu {
 		g.setFont(titleFont);
 		g.setColor(Color.BLACK);
 		
-		g.drawString("IDK", 200, 100);
+		g.drawString("Aidan Sucks Balls", 200, 100);
 		g.setColor(Color.GRAY);
 		if(Game.game.playButton){
 			g.setColor(Color.YELLOW);
